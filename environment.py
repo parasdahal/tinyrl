@@ -5,7 +5,7 @@ class GridWorld:
     POSSIBLE_ACTIONS = ['U', 'D', 'L', 'R']
     WIND = [0.8, 0.1, 0.1]
 
-    def __init__(self, size, start, rewards, actions):
+    def __init__(self, size, start, end, rewards, actions):
         """Initializes GridWorld environment
 
         Parameters
@@ -19,12 +19,13 @@ class GridWorld:
 
         self.height, self.width = size
         self.set_state(start)
-        
+        self.end = end
+
         self.rewards = rewards
         self.actions = actions
 
         self.num_states = np.prod(size)
-        self.num_actions = 4
+        self.num_actions = len(GridWorld.POSSIBLE_ACTIONS)
         
     
     def set_state(self,state):
@@ -33,26 +34,44 @@ class GridWorld:
     def current_state(self):
         return (self.i, self.j)
     
-    def _move(self,action):
+    def move_state(self, action, state):
+        # check if legal action
         if action in self.actions[self.current_state()]:
-            i, j = self.current_state()
+            i, j = state
             if action == 'U': self.set_state((i-1,j))
             elif action == 'D': self.set_state((i+1,j))
             elif action == 'R': self.set_state((i,j+1))
             elif action == 'L': self.set_state((i,j-1))
 
-    def transition(self, action):
+    def transition(self, action, state = None):
+        # returns [prob, new_state, reward, is_done]
         assert(action in GridWorld.POSSIBLE_ACTIONS)
+        prob = 0.8
+        
+        # based on probabilities choose stochastic actions
         if action == 'U':
             sample = np.random.choice(['U','R','L'], 1, p=GridWorld.WIND)
+            if(sample[0] != 'U'): prob = 0.1
         elif action == 'D':
             sample = np.random.choice(['D','R','L'], 1, p=GridWorld.WIND)
+            if(sample[0] != 'D'): prob = 0.1
         elif action == 'R':
             sample = np.random.choice(['R','U','D'], 1, p=GridWorld.WIND)
+            if(sample[0] != 'R'): prob = 0.1
         elif action == 'L':
             sample = np.random.choice(['L','U','D'], 1 ,p=GridWorld.WIND)
-        self._move(sample[0])
-        return self.rewards.get((self.current_state()),0), self.current_state()
+            if(sample[0] != 'L'): prob = 0.1
+        
+        # if state is not given in args use current state as the source
+        if state == None: source = self.current_state()
+        else: source = state
+        
+        self.move_state(action=sample[0], state=source)
+
+        # are we at the goal state
+        is_done = self.current_state() == self.end
+        
+        return [(prob, self.current_state(), self.rewards.get((self.current_state()),0), is_done)]
 
 def grid():
 
@@ -74,5 +93,5 @@ def grid():
         (3,2) :['R','L','U']
     }
 
-    return GridWorld( size=(4,4),start=(1,0),\
+    return GridWorld( size=(4,4),start=(1,0), end=(3,3), \
                     rewards = rewards, actions = actions )
