@@ -47,17 +47,17 @@ class GridWorld:
 
     def transition(self, action, state):
 
-        def stochastic(possible_actions,prob):
+        def stochastic_action(possible_actions,prob):
             result = []
             for i,a in enumerate(possible_actions):
                 coord, reward = self._new_state_reward(a, state)
                 result.append((prob[i], coord, reward))
             return result
 
-        if action == 'U': return stochastic(['U','R','L'],[0.8,0.1,0.1])
-        elif action == 'D': return stochastic(['D','R','L'],[0.8,0.1,0.1])
-        elif action == 'R': return stochastic(['R','U','D'],[0.8,0.1,0.1])
-        elif action == 'L': return stochastic(['L','U','D'],[0.8,0.1,0.1])
+        if action == 'U': return stochastic_action(['U','R','L'],[0.8,0.1,0.1])
+        elif action == 'D': return stochastic_action(['D','R','L'],[0.8,0.1,0.1])
+        elif action == 'R': return stochastic_action(['R','U','D'],[0.8,0.1,0.1])
+        elif action == 'L': return stochastic_action(['L','U','D'],[0.8,0.1,0.1])
         
 
 def grid():
@@ -81,3 +81,9 @@ def grid():
     }
 
     return GridWorld( size=(4,4), rewards = rewards, actions = actions )
+
+def print_grid(env,content_dict):
+    grid = np.arange(env.num_states,dtype=object).reshape(env.height,env.width)
+    for coord, content in content_dict.items():
+        grid[coord[0],coord[1]] = content
+    print(grid)

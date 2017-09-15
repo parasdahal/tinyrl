@@ -1,5 +1,4 @@
 import numpy as np
-from environment import grid
 
 def value_iteration(env, discount_factor = 0.99, threshold = 0.001):
     
@@ -35,12 +34,6 @@ def value_iteration(env, discount_factor = 0.99, threshold = 0.001):
         policy[state] = best_a
     
     return policy, V
-
-def print_solution(env,policy):
-    grid = np.arange(env.num_states,dtype=object).reshape(env.height,env.width)
-    for state, action in policy.items():
-        grid[state[0],state[1]] = action
-    print(grid)
 
 
 
