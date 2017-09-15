@@ -3,9 +3,8 @@ import numpy as np
 class GridWorld:
 
     POSSIBLE_ACTIONS = ['U', 'D', 'L', 'R']
-    WIND = [0.8, 0.1, 0.1]
 
-    def __init__(self, size, start, end, rewards, actions):
+    def __init__(self, size, rewards, actions):
         """Initializes GridWorld environment
 
         Parameters
@@ -18,60 +17,48 @@ class GridWorld:
         """
 
         self.height, self.width = size
-        self.set_state(start)
-        self.end = end
 
         self.rewards = rewards
         self.actions = actions
 
         self.num_states = np.prod(size)
         self.num_actions = len(GridWorld.POSSIBLE_ACTIONS)
-        
-    
-    def set_state(self,state):
-        self.i, self.j = state
 
-    def current_state(self):
-        return (self.i, self.j)
     
-    def move_state(self, action, state):
+    def _limit_coordinates(self,state):
+        i, j = state
+        if i < 0: i = 0
+        elif i > self.height-1: i = self.height - 1
+        if j < 0: j = 0
+        elif j > self.width-1: j = self.width - 1
+        return (i,j)
+
+
+    def _new_state_reward(self, action, state):
         # check if legal action
-        if action in self.actions[self.current_state()]:
-            i, j = state
-            if action == 'U': self.set_state((i-1,j))
-            elif action == 'D': self.set_state((i+1,j))
-            elif action == 'R': self.set_state((i,j+1))
-            elif action == 'L': self.set_state((i,j-1))
+        
+        i, j = state
+        if action == 'U': i,j = i-1,j
+        elif action == 'D': i,j = i+1,j
+        elif action == 'R': i,j = i,j+1
+        elif action == 'L': i,j = i,j-1
+        new_state = self._limit_coordinates((i,j))        
+        return new_state, self.rewards.get(new_state)
 
-    def transition(self, action, state = None):
-        # returns [prob, new_state, reward, is_done]
-        assert(action in GridWorld.POSSIBLE_ACTIONS)
-        prob = 0.8
-        
-        # based on probabilities choose stochastic actions
-        if action == 'U':
-            sample = np.random.choice(['U','R','L'], 1, p=GridWorld.WIND)
-            if(sample[0] != 'U'): prob = 0.1
-        elif action == 'D':
-            sample = np.random.choice(['D','R','L'], 1, p=GridWorld.WIND)
-            if(sample[0] != 'D'): prob = 0.1
-        elif action == 'R':
-            sample = np.random.choice(['R','U','D'], 1, p=GridWorld.WIND)
-            if(sample[0] != 'R'): prob = 0.1
-        elif action == 'L':
-            sample = np.random.choice(['L','U','D'], 1 ,p=GridWorld.WIND)
-            if(sample[0] != 'L'): prob = 0.1
-        
-        # if state is not given in args use current state as the source
-        if state == None: source = self.current_state()
-        else: source = state
-        
-        self.move_state(action=sample[0], state=source)
+    def transition(self, action, state):
 
-        # are we at the goal state
-        is_done = self.current_state() == self.end
+        def stochastic(possible_actions,prob):
+            result = []
+            for i,a in enumerate(possible_actions):
+                coord, reward = self._new_state_reward(a, state)
+                result.append((prob[i], coord, reward))
+            return result
+
+        if action == 'U': return stochastic(['U','R','L'],[0.8,0.1,0.1])
+        elif action == 'D': return stochastic(['D','R','L'],[0.8,0.1,0.1])
+        elif action == 'R': return stochastic(['R','U','D'],[0.8,0.1,0.1])
+        elif action == 'L': return stochastic(['L','U','D'],[0.8,0.1,0.1])
         
-        return [(prob, self.current_state(), self.rewards.get((self.current_state()),0), is_done)]
 
 def grid():
 
@@ -90,8 +77,7 @@ def grid():
         (2,0) : ['R','U','D'], (2,1) : ['R','L','U','D'],
         (2,2) : ['R','L','U','D'],(2,3) : ['L','U','D'],
         (3,0) : ['R','U'], (3,1) : ['R','L','U'],
-        (3,2) :['R','L','U']
+        (3,2) :['R','L','U'], (3,3) : []
     }
 
-    return GridWorld( size=(4,4),start=(1,0), end=(3,3), \
-                    rewards = rewards, actions = actions )
+    return GridWorld( size=(4,4), rewards = rewards, actions = actions )
