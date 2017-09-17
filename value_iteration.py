@@ -22,13 +22,29 @@ def value_iteration(env, discount_factor=0.99, threshold=0.001):
     V = {}
     for state in all_states:
         V[state] = 0
+    
+    episode = 0
+    stats = []
 
     while True:
+        stats.append({})
         delta = 0
         for state in all_states:
             best_V, _ = calculate_v(V, state, env.actions[state])
             delta = max(delta, np.abs(best_V - V[state]))
             V[state] = best_V
+        
+        # collect stats
+        policy_list, v_list = [],[]
+        for state in sorted(all_states):
+            best_v, best_a = calculate_v(V, state, env.actions[state])
+            policy_list.append(best_a)
+            v_list.append(best_v)
+        
+        stats[episode] = {'policy':policy_list,'score':v_list}
+        
+        episode += 1
+        
         if delta < threshold:
             break
 
@@ -37,4 +53,4 @@ def value_iteration(env, discount_factor=0.99, threshold=0.001):
         _, best_a = calculate_v(V, state, env.actions[state])
         policy[state] = best_a
 
-    return policy, V
+    return policy, V, stats
