@@ -95,3 +95,17 @@ def print_grid(env, content_dict):
     for coord, content in content_dict.items():
         grid[coord[0], coord[1]] = content
     print(grid)
+
+def play_game(env,start,end,policy):
+    steps = []
+    state = start
+    while state != end:
+        state_idx = state[0]*env.height + state[1]
+        action = policy[state_idx]
+        new_state, reward = env.transition(action,state,choose=True)
+        steps.append([action,list(state),reward])
+        state = new_state
+    steps.append(['G',list(end),0])
+    return steps
+
+

@@ -1,7 +1,7 @@
 import numpy as np
+from environment import play_game
 
-
-def value_iteration(env, discount_factor=0.99, threshold=0.001):
+def value_iteration(env, start, stop, discount_factor=0.99, threshold=0.001):
 
     def calculate_v(V, state, actions):
         # V[s] = max[a]{ sum[s',r] { p(s',r|s,a)[r + gamma*V[s']] } }

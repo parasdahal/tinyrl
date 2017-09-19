@@ -1,5 +1,5 @@
 import numpy as np
-
+from environment import play_game
 
 all_actions = ['U', 'D', 'L', 'R']
 
@@ -47,10 +47,11 @@ def q_learning(env, num_episodes, epsilon, alpha,
         for state in sorted(all_states):
             best_a = max(Q[state], key=Q[state].get)
             best_q = Q[state][best_a]
-            policy_list.append(best_a)
+            if state != stop: policy_list.append(best_a)
+            else: policy_list.append('G')
             q_list.append(best_q)
         
-        stats[episode] = {'policy':policy_list,'score':q_list}
+        stats[episode] = {'policy':policy_list,'score':q_list,'steps':play_game(env,start,stop,policy_list)}
 
     policy, V, = {}, {}
 

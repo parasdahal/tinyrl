@@ -1,0 +1,166 @@
+<html>
+    <head>
+        <title>RL | Value-Iteration</title>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
+        <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js" integrity="sha384-b/U6ypiBEHpOf/4+1nzFpr53nxSS+GLCkfwBdFNTxtclqqenISfwAzpKaMNFNmj4" crossorigin="anonymous"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js" integrity="sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1" crossorigin="anonymous"></script>
+        
+        <script src="https://d3js.org/d3.v4.min.js"></script>
+        <style>
+            path {
+                fill: none;
+                stroke: #357CB6;
+                stroke-width: 2px;
+              }
+        </style>
+    </head>
+    <body>
+    <div class="container">
+        <div class="row justify-content-md-center"><h1 class="display-4">Value Iteration</h1></div>
+        <div class="row"><hr></div>
+        <div class="row">
+            <div class="col">
+                <h4>Iteration: <span class="episode">0</span></h4>
+                <button onClick="runAgent()" class="btn btn-outline-success">Start</button>
+                <button onClick="location.reload()" class="btn btn-outline-danger">Reset</button>
+                <hr>
+                <div id="grid"></div>
+                
+            </div>
+            <div class="col">
+                <h4>Average value per Iteration</h4>
+                <div id="chart"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+
+        var numcols = 4;
+        var numrows = 4;
+        var cellsize = 100;
+        var gridheight = 450;
+        var gridwidth = 450;
+        var chartheight = 400;
+        var chartwidth = 400;
+        var iterspeed = 1000;
+        var data = {{data|safe}}
+        var seriesData = []
+        var chart; var line;
+        var rs ={}
+        var vs ={}
+        var ps = {}
+
+        var createGrid = function(){
+
+            var grid = d3.select('#grid').append('svg')
+                    .attr('height',gridheight).attr('width',gridwidth)
+
+            for(var y=0;y<numcols;y++)
+                for(var x=0;x<numrows;x++)
+                {
+                    var xc = x*cellsize;
+                    var yc = y*cellsize;
+                    var state = y*numcols + x;
+                    var g = grid.append('g');
+                    var rect = g.append('rect');
+                    var r = g.append('rect')
+                            .attr('x',xc )
+                            .attr('y', yc)
+                            .attr('height', cellsize)
+                            .attr('width', cellsize)
+                            .attr('fill', '#FFF')
+                            .attr('stroke', 'black')
+                            .attr('stroke-width', 1);
+                    rs[state] = r;
+                    var v = g.append('text')
+                            .attr('class','cell-policy')
+                            .attr('x',d => xc + cellsize/2)
+                            .attr('y',d => yc + cellsize/1.05)
+                            .style('font-size','12px')
+                            .attr("text-anchor", "middle")
+                            .text('0.00');
+                    vs[state] = v;
+                    var p = g.append('text')
+                            .attr('class','cell-policy')
+                            .attr('x',d => xc + cellsize/12)
+                            .attr('y',d => yc + cellsize/4)
+                            .text('↻');
+                    ps[state] = p;
+                }
+            rs[15].style('fill','darkgreen');
+            rs[15].text('');
+            rs[5].style('fill','red');
+                
+        }
+
+        var createChart = function(){
+            var xScale = d3.scaleLinear().domain([0,data.length]).range([0, chartwidth]);
+            var yScale = d3.scaleLinear().domain([0,100]).range([chartheight, 0]);
+
+            line = d3.line()
+                .x(function(d, i) { return xScale(i); })
+                .y(function(d) { return yScale(d); })
+                .curve(d3.curveMonotoneX)
+            
+            var svg = d3.select("#chart").append("svg")
+                            .attr("width", 500)
+                            .attr("height", 500)
+                            .append("g")
+                            .attr("transform", "translate(30,75)");
+            svg.append("g")
+                .attr("transform", "translate(0," + chartheight + ")")
+                .call(d3.axisBottom(xScale)); 
+
+            svg.append("g")
+                .call(d3.axisLeft(yScale));
+            
+            chart = svg.append("path").datum([]).attr("class", "line").attr("d", line);
+            chart.datum(seriesData).attr("class", "line").attr("d", line);
+ 
+        }
+        
+        var sleep = function(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        var runAgent = async function(){
+            
+            var arrow_map ={'U':'⇡','D':'⇣','L':'⇠','R':'⇢','G':'G'};
+            
+            for(var e=0;e<data.length;e++){
+                grid_data = data[e];
+
+                await sleep(iterspeed);
+
+                r = 0;
+                for(var i=0;i<grid_data.score.length;i++)
+                    r += grid_data.score[i]
+                
+                seriesData.push(r/15)
+                chart.datum(seriesData).attr("class", "line").attr("d", line);
+            
+                for(var y=0;y<numrows;y++)
+                    for(var x=0;x<numcols;x++)
+                    {
+                        var state = y*numrows + x;
+                        p = ps[state];
+                        v = vs[state];
+                        p.text(arrow_map[grid_data.policy[state]]);
+                        v.text(grid_data.score[state].toFixed(2));
+                    }
+                
+                d3.select('.episode').text(e+1);
+            }
+        }
+        
+        
+        window.onload = function() {
+            createGrid();
+            createChart();
+        };
+        
+    </script>
+    </body>
+</html>
