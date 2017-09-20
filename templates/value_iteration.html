@@ -45,9 +45,15 @@
         var chartheight = 400;
         var chartwidth = 400;
         var iterspeed = 1000;
+        // data rendered by flask
         var data = {{data|safe}}
+        // data for chart
         var seriesData = []
-        var chart; var line;
+        // chart selection
+        var chart;
+        // line generator function
+        var line;
+        // dicts to store d3 selections for rects, v and p texts
         var rs ={}
         var vs ={}
         var ps = {}
@@ -56,7 +62,7 @@
 
             var grid = d3.select('#grid').append('svg')
                     .attr('height',gridheight).attr('width',gridwidth)
-
+            // create rects and add value and policy texts
             for(var y=0;y<numcols;y++)
                 for(var x=0;x<numrows;x++)
                 {
@@ -89,6 +95,7 @@
                             .text('↻');
                     ps[state] = p;
                 }
+            // bad and goal states
             rs[15].style('fill','darkgreen');
             rs[15].text('');
             rs[5].style('fill','red');
@@ -120,7 +127,7 @@
             chart.datum(seriesData).attr("class", "line").attr("d", line);
  
         }
-        
+        // function to delay agent
         var sleep = function(ms) {
             return new Promise(resolve => setTimeout(resolve, ms));
         }
@@ -131,16 +138,20 @@
             
             for(var e=0;e<data.length;e++){
                 grid_data = data[e];
-
+                
+                // wait
                 await sleep(iterspeed);
 
+                // calculate average value for this iteration
                 r = 0;
                 for(var i=0;i<grid_data.score.length;i++)
                     r += grid_data.score[i]
                 
+                // add line to chart for average value
                 seriesData.push(r/15)
                 chart.datum(seriesData).attr("class", "line").attr("d", line);
-            
+                
+                // update p and v texts of the grid
                 for(var y=0;y<numrows;y++)
                     for(var x=0;x<numcols;x++)
                     {
@@ -150,7 +161,7 @@
                         p.text(arrow_map[grid_data.policy[state]]);
                         v.text(grid_data.score[state].toFixed(2));
                     }
-                
+                // update iteration text
                 d3.select('.episode').text(e+1);
             }
         }

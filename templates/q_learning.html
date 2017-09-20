@@ -49,9 +49,15 @@
         var chartheight = 400;
         var chartwidth = 400;
         var agentdelay = 50;
+        // data rendered by flask
         var data = {{data|safe}}
+        // data for chart
         var seriesData = []
-        var chart; var line;
+        // chart selection
+        var chart;
+        // line generator function
+        var line;
+        // dicts to store d3 selections for rects, v and p texts
         var rs ={}
         var vs ={}
         var ps = {}
@@ -60,13 +66,16 @@
 
             var grid = d3.select('#grid').append('svg')
                     .attr('height',gridheight).attr('width',gridwidth)
+            // add svg:def for mario sprites
             var defs = grid.append('svg:defs');
+            // map of pattern id and link for sprite
             var mario_patterns = {
                 'U':['mario_up','{{url_for("static",filename="assets/up.png")}}' ],
                 'D':['mario_down','{{url_for("static",filename="assets/downwards.png")}}'],
                 'L':['mario_left','{{url_for("static",filename="assets/left.png")}}'],
                 'R':['mario_right','{{url_for("static",filename="assets/right.png")}}'],
             }
+            // add all the sprite patterns
             Object.keys(mario_patterns).forEach(function(key){
                 defs.append("svg:pattern")
                 .attr("id", mario_patterns[key][0])
@@ -113,18 +122,22 @@
                             .text('↻');
                     ps[state] = p;
                 }
+            // bad state and goal state
             rs[15].style('fill','darkgreen');
             rs[15].text('');
             rs[5].style('fill','red');
                 
         }
         
+        // function to delay agent
         var sleep = function(ms) {
             return new Promise(resolve => setTimeout(resolve, ms));
         }
 
+        
         var agentStep = async function (grid_data){
             
+            //fill values for each state of agent
             var mario_map = {
                 'U':'url(#mario_up)','D':'url(#mario_down)','L':'url(#mario_left)','R':'url(#mario_right)'
             }
@@ -133,9 +146,11 @@
             {
                     var state = grid_data.steps[i][1][0] * numrows + grid_data.steps[i][1][1];
                     var action = grid_data.policy[state]
+                    // add agent sprite to cell and wait 
                     var cell = rs[state];
                     cell.style('fill',mario_map[action]);
                     await sleep(agentdelay);
+                    // reset cell 
                     cell.style('fill','#fff')
                     if(state == 5)cell.style("fill","red");
                     if(state == 15)cell.style("fill","darkgreen");
@@ -167,25 +182,24 @@
             chart.datum(seriesData).attr("class", "line").attr("d", line);
  
         }
-
+        
         var runAgent = async function(){
             
             var arrow_map ={'U':'⇡','D':'⇣','L':'⇠','R':'⇢','G':'G'};
             
             for(var e=0;e<data.length;e++){
                 grid_data = data[e];
-
+                // take action, goto new state and wait
                 await agentStep(grid_data)
-
+                // calculate reward for this episode
                 r = 0;
                 for(var i=0;i<grid_data.steps.length;i++)
                     r += grid_data.steps[i][2]
-                
+                // add reward data to line chart
                 seriesData.push(r)
                 chart.datum(seriesData).attr("class", "line").attr("d", line);
                 
-                
-            
+                // update policy and value texts for the grid
                 for(var y=0;y<numrows;y++)
                     for(var x=0;x<numcols;x++)
                     {
@@ -195,7 +209,7 @@
                         p.text(arrow_map[grid_data.policy[state]]);
                         v.text(grid_data.score[state].toFixed(2));
                     }
-                
+                // update episode text
                 d3.select('.episode').text(e+1);
             }
         }
